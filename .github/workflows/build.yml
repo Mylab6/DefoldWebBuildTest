@@ -1,0 +1,56 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the main branch
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-android:
+    environment: web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Setup Defold
+        uses: dapetcu21/setup-defold@v3.0.3
+        with:
+          sha1: '9141d9d3605e3f5d51c71293116d769da2613d39'
+          #version: '1.8.0'  # Ensure you use the version you need
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'  # Eclipse Temurin is a popular choice
+          java-version: '17.0.11+9'  # Java 11 is commonly used with Android
+
+      - name: Prepare environment
+        run: |
+          echo "NEW_VERSION_CODE=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
+          echo "NEW_VERSION_NAME=1.0.${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
+
+      - name: Build project for Android
+        run: |
+             java -jar $BOB --platform wasm-web --variant debug --bundle-output ./build/html5 --archive resolve build bundle
+
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+          
+      - name: Install Butler
+        run: |
+            curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+            unzip butler.zip
+            chmod +x butler
+            sudo mv butler /usr/local/bin
+      - name: Login to Butler
+        run: butler login
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER }}
+      - name: Push HTML5 build to Itch.io
+        run: butler push build/html5 ${{secrets.ITCH_URL}}:html5
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER }}
