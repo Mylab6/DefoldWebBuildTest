@@ -33,7 +33,7 @@ jobs:
           echo "NEW_VERSION_CODE=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
           echo "NEW_VERSION_NAME=1.0.${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
 
-      - name: Build project for Web
+      - name: Build project for Web.
         run: |
              java -jar $BOB --platform wasm-web --variant debug --bundle-output ./build/html5 --archive resolve build bundle
 
